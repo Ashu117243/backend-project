@@ -22,11 +22,15 @@ const userSchema = new Schema(
     fullname: {
       type: String,
       require: true,
+      trim: true,
+      index: true,
     },
     email: {
       type: String,
       require: true,
       unique: true,
+      lowercase: true,
+      trim: true,
     },
     password: {
       type: String,
@@ -34,7 +38,7 @@ const userSchema = new Schema(
     },
     avatar: {
       type: String,
-      require: true,
+      require: [true, "Password is required"],
     },
     coverImage: {
       type: String,

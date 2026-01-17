@@ -1,24 +1,25 @@
 // require("dotenv").config({path:'./env'})
 
-import express from "express";
-
 import connectDB from "./db/index.js";
 
 import dotenv from "dotenv";
 import { app } from "./app.js";
 
 dotenv.config({
-  path: "./env",
+  path: "./.env",
 });
 
 connectDB()
   .then(() => {
-    app.listen(process.env.PORT || 8000, () => {
-      console.log(` server has started at PORT : ${process.env.PORT}`);
-    });
+    
     app.on("ERROR", (err) => {
       console.log("There is an error in start of the server ", err);
     });
+
+    app.listen(process.env.PORT || 8000, () => {
+      console.log(` server has started at PORT : ${process.env.PORT}`);
+    });
+    
   })
   .catch((err) => {
     console.log("MongoDb connection ERROR !!! ", err);
@@ -26,7 +27,7 @@ connectDB()
 
 //importing
 
-/*
+/* use a semicolon before starting an IFFE 
 (async () => {
   try {
     await mongoose.connect(`${process.env.MONGODB_URI}/${DB_NAME}`);
