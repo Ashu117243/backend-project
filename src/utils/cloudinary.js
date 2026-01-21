@@ -1,5 +1,8 @@
 import { v2 as cloudinary } from "cloudinary";
 import fs from "fs";
+import { asyncHandler } from "./asyncHandler";
+import { ApiError } from "./ApiError";
+import { raw } from "express";
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -25,4 +28,19 @@ const uploadOnCloudinary = async (localFilePath) => {
   }
 };
 
-export { uploadOnCloudinary };
+const deleteFromCloudinary = async (publicId) => {
+  try {
+    if (!publicId) {
+      throw new ApiError(400, "cloudinary file path not avilavle");
+    }
+    const response = await cloudinary.uploader.destroy(publicId, {
+      resource_type: "auto",
+    });
+    console.log(response);
+    return response;
+  } catch (error) {
+    throw new ApiError(400, "cloudinary file path not avilavle");
+  }
+};
+
+export { uploadOnCloudinary, deleteFromCloudinary };

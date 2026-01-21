@@ -1,7 +1,10 @@
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { User } from "../models/user.model.js";
-import { uploadOnCloudinary } from "../utils/cloudinary.js";
+import {
+  uploadOnCloudinary,
+  deleteFromCloudinary,
+} from "../utils/cloudinary.js";
 
 import { ApiResponse } from "../utils/ApiResponse.js";
 import jwt from "jsonwebtoken";
@@ -15,7 +18,7 @@ const generateAccessAndRefreshToken = async (userid) => {
     user.refreshToken = refreshToken;
     // now we save the user
     await user.save({ validateBeforeSave: false });
-    console.log("refreshToken", refreshToken);
+
     return { accessToken, refreshToken };
   } catch (error) {
     throw new ApiError(500, "Error in generating access and refresh token");
@@ -179,7 +182,7 @@ const logoutUser = asyncHandler(async (req, res) => {
       },
     },
     {
-      // we get new updated user after this operation
+      // we get new updated user after this saving we get new user returned by this method
       new: true,
     }
   );
@@ -193,6 +196,8 @@ const logoutUser = asyncHandler(async (req, res) => {
     .clearCookie("refreshToken", options)
     .json(new ApiResponse(200, {}, "user logged Out"));
 });
+
+// refresh the accessToken when it is expired
 
 const refreshAccessToken = asyncHandler(async (req, res) => {
   // we are taking refresh token from inside the cookies or if not present there then from re.body
@@ -251,4 +256,103 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
   }
 });
 
-export { registerUser, loginUser, logoutUser, refreshAccessToken };
+// Update the userpasswrod
+
+const UpdatePassword = asyncHandler(async (req, res) => {
+  const { newPassword, confirmPassword } = req.body;
+
+  if (!newPassword || !confirmPassword) {
+    throw new ApiError(400, "Both password fields are required");
+  }
+
+  if (newPassword !== confirmPassword) {
+    throw new ApiError(400, "password does not match");
+  }
+
+  const user = await User.findById(req?.user._id);
+  if (!user) {
+    throw new ApiError(400, "User  not found");
+  }
+
+  user.password = newPassword;
+  await user.save({ validateBeforeSave: false });
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, {}, "password changed successfully"));
+});
+
+// update UserInfo
+const updateUserInfo = asyncHandler(async (req, res) => {
+  const { fullname, email } = req.body;
+
+  if (!fullname && !email) {
+    throw new ApiError(400, "Fullname or email is requred");
+  }
+
+  const user = await User.findByIdAndUpdate(
+    req.user?._id,
+    {
+      $set: {
+        fullname,
+        email,
+      },
+    },
+    { new: true }
+  ).select("-password");
+
+  if (!user) {
+    throw new ApiError(400, "user Info not updated");
+  }
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, user, "userInfo updated successfully"));
+});
+
+// update user Avatar
+
+const updateUserCoverImage = asyncHandler(async (req, res) => {
+  const CoverImageLocalFilePath = req.files?.coverImage?.[0]?.path;
+  if (!CoverImageLocalFilePath) {
+    throw new ApiError(400, "cover image not avilavle");
+  }
+  const user = await User.findById(req.user._id);
+
+  const coverImage = await uploadOnCloudinary(CoverImageLocalFilePath);
+
+  user.coverImage = coverImage.url;
+  await user.save({ validateBeforeSave: false });
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, coverImage, "coverImage updated successfully"));
+});
+const updateUserAvatar = asyncHandler(async (req, res) => {
+  // i have to delete the old avatar file after uploading i will write it in the end
+  const avatarLocalFilePath = req.files?.avatar?.[0]?.path;
+  if (!avatarLocalFilePath) {
+    throw new ApiError(400, "avatar image not avilavle");
+  }
+  const user = await User.findById(req.user._id);
+
+  const avatar = await uploadOnCloudinary(avatarLocalFilePath);
+
+  user.avatar = avatar.url;
+  await user.save({ validateBeforeSave: false });
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, avatar, "avatar image updated successfully"));
+});
+
+export {
+  registerUser,
+  loginUser,
+  logoutUser,
+  refreshAccessToken,
+  UpdatePassword,
+  updateUserInfo,
+  updateUserAvatar,
+  updateUserCoverImage,
+};
