@@ -1,8 +1,5 @@
 import { v2 as cloudinary } from "cloudinary";
 import fs from "fs";
-import { asyncHandler } from "./asyncHandler";
-import { ApiError } from "./ApiError";
-import { raw } from "express";
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -27,20 +24,20 @@ const uploadOnCloudinary = async (localFilePath) => {
     return null;
   }
 };
+const getPublicId = (url) => {
+  const parts = url.split("/");
+  const publicId = parts[parts.length - 1].split(".")[0];
+  return publicId;
+};
 
 const deleteFromCloudinary = async (publicId) => {
   try {
-    if (!publicId) {
-      throw new ApiError(400, "cloudinary file path not avilavle");
-    }
-    const response = await cloudinary.uploader.destroy(publicId, {
-      resource_type: "auto",
-    });
-    console.log(response);
-    return response;
+    const res = await cloudinary.uploader.destroy(publicId);
+    console.log(res.result);
+    if (res.result !== "ok")
+      await cloudinary.uploader.destroy(publicId, { resource_type: "video" });
   } catch (error) {
-    throw new ApiError(400, "cloudinary file path not avilavle");
+    console.log("failed to delete the file from cloudinary", error);
   }
 };
-
-export { uploadOnCloudinary, deleteFromCloudinary };
+export { uploadOnCloudinary, getPublicId, deleteFromCloudinary };

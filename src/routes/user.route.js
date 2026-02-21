@@ -4,6 +4,12 @@ import {
   logoutUser,
   registerUser,
   refreshAccessToken,
+  UpdatePassword,
+  updateUserInfo,
+  updateUserAvatar,
+  updateUserCoverImage,
+  getChannelProfileInfo,
+  getUsersWatchHistory,
 } from "../controllers/user.controller.js";
 import { upload } from "../middlewares/multer.middleware.js";
 import { jwtVerify } from "../middlewares/auth.middleware.js";
@@ -31,5 +37,15 @@ router.route("/login").post(loginUser);
 
 router.route("/logout").post(jwtVerify, logoutUser);
 router.route("/refresh-token").post(refreshAccessToken);
+router.route("/update-password").post(jwtVerify, UpdatePassword);
+router.route("/update-user-info").patch(jwtVerify, updateUserInfo);
+router
+  .route("/avatar")
+  .patch(jwtVerify, upload.single("avatar"), updateUserAvatar);
+router
+  .route("/coverimage")
+  .patch(jwtVerify, upload.single("coverImage"), updateUserCoverImage);
+router.route("/channel/:username").get(jwtVerify, getChannelProfileInfo);
+router.route("/history").get(jwtVerify, getUsersWatchHistory);
 
 export default router;
